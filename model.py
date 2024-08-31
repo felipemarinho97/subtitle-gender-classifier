@@ -161,7 +161,7 @@ class ECAPA_gender(nn.Module, PyTorchModelHubMixin):
             audio = resample(audio, sr, 16000)
         return audio
     
-    def predict(self, audio : torch.Tensor, device: torch.device) -> torch.Tensor:
+    def predict(self, audio: torch.Tensor, device: torch.device) -> str:
         audio = self.load_audio(audio)
         audio = audio.to(device)
         self.eval()
@@ -169,4 +169,7 @@ class ECAPA_gender(nn.Module, PyTorchModelHubMixin):
         with torch.no_grad():
             output = self.forward(audio)
             _, pred = output.max(1)
+            
+            pred = pred[0] if pred.dim() > 0 else pred
+
         return self.pred2gender[pred.item()]

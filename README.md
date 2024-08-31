@@ -1,39 +1,51 @@
-# Voice gender classifier 
+# Subtitle gender classifier 
 - This repo contains the inference code to use pretrained human voice gender classifier.
-- You could also try 🤗[Huggingface online demo](https://huggingface.co/spaces/JaesungHuh/voice-gender-classifier).
+- It also contains the code to tag subtitles files.
+- This is a fork of the [voice-gender-classifier](https://github.com/JaesungHuh/voice-gender-classifier.git)
 
 ## Installation
 First, clone this repository
 ```
-git clone https://github.com/JaesungHuh/voice-gender-classifier.git
+git clone https://github.com/felipemarinho97/subtitle-gender-classifier.git
 ```
 
 and install the packages via pip.
 
 ```
-cd voice-gender-classifier
+cd subtitle-gender-classifier
 pip install -r requirements.txt
 ```
 
 ## Usage
+To detect the gender of the speaker in some audio file, run the following command:
+
 ```
-import torch
+python detect.py <path_to_audio_file>
+```
 
-from model import ECAPA_gender
+To tag a subtitle file with gender metadata, run the following command:
 
-# You could directly download the model from the huggingface model hub
-model = ECAPA_gender.from_pretrained("JaesungHuh/ecapa-gender")
-model.eval()
+```
+python gender_tagging.py input_subtitles.srt input_video.mp4 output_subtitles.srt
+```
 
-# If you are using gpu .... 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model.to(device)
+The output subtitle file will gender metadata like this:
+```
+1
+00:01:15,040 --> 00:01:17,519
+<female>Miss Tracy, have a smile</female>
 
-# Load the audio file and use predict function to directly get the output
-example_file = "data/00001.wav"
-with torch.no_grad():
-    output = model.predict(example_file, device=device)
-    print("Gender : ", output)
+2
+00:01:19,240 --> 00:01:20,879
+<female>Please look this way</female>
+
+3
+00:01:23,480 --> 00:01:24,999
+<male>Tracy, cheers</male>
+
+4
+00:01:25,080 --> 00:01:25,919
+<male>Great</male>
 ```
 
 ## Pretrained weights
