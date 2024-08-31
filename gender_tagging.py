@@ -7,6 +7,7 @@ import torch
 from model import ECAPA_gender
 import tempfile
 from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def extract_audio_segment(video_file, start_time, duration, output_file):
     # Run ffmpeg command to extract audio and suppress output
@@ -24,8 +25,7 @@ def process_subtitles_with_gender(srt_file, video_file, output_srt_file, model, 
     output_subtitles = []
     tmp_dir = tempfile.mkdtemp(prefix='/tmp/')
 
-    # Use tqdm for the progress bar
-    for subtitle in tqdm(subtitles, desc="Processing subtitles"):
+    def process_subtitle(subtitle):
         start_time = subtitle.start.total_seconds()
         duration = (subtitle.end - subtitle.start).total_seconds()
         audio_file = f"{tmp_dir}/temp_audio_{subtitle.index}.wav"
@@ -39,10 +39,22 @@ def process_subtitles_with_gender(srt_file, video_file, output_srt_file, model, 
         # Tag the subtitle text with the detected gender
         tagged_text = f"<{gender}>{subtitle.content}</{gender}>"
         subtitle.content = tagged_text
-        output_subtitles.append(subtitle)
 
         # Remove temporary audio file
         os.remove(audio_file)
+
+        return subtitle
+
+    # Use ThreadPoolExecutor to process subtitles in parallel
+    with ThreadPoolExecutor() as executor:
+        future_to_subtitle = {executor.submit(process_subtitle, subtitle): subtitle for subtitle in subtitles}
+        
+        # Use tqdm to show the progress bar
+        for future in tqdm(as_completed(future_to_subtitle), total=len(subtitles), desc="Processing subtitles"):
+            output_subtitles.append(future.result())
+
+    # Sort subtitles by index to maintain original order
+    output_subtitles.sort(key=lambda x: x.index)
 
     # Write the modified subtitles to a new .srt file
     with open(output_srt_file, 'w', encoding='utf-8') as f:
